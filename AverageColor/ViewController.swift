@@ -15,7 +15,7 @@ class ViewController: UIViewController {
     @IBOutlet weak var detailLabel: UILabel!
     @IBOutlet weak var imageView: UIImageView!
 
-    let pixelThinner = 200
+    let pixelThinner = 5
 
     let numberOfImages = 15
     var images: [String]!
@@ -67,24 +67,26 @@ class ViewController: UIViewController {
 
         imageView.image = image
         view.backgroundColor = image.areaAverage()
+        let before = Date()
+        findColors(image) { [weak self] imageColors in
+            guard let sSelf = self else { return }
+            var (primaryColor, secondaryColor, detailColor) = sSelf.findMainColors(imageColors)
+            print(Date().timeIntervalSince(before))
+            if primaryColor == nil { primaryColor = .black }
+            if secondaryColor == nil { secondaryColor = .white }
+            if detailColor == nil { detailColor = .white }
 
-        let imageColors = findColors(image)
-        var (primaryColor, secondaryColor, detailColor) = findMainColors(imageColors)
-
-        if primaryColor == nil { primaryColor = .black }
-        if secondaryColor == nil { secondaryColor = .white }
-        if detailColor == nil { detailColor = .white }
-
-        primaryLabel.textColor = primaryColor
-        secondaryLabel.textColor = secondaryColor
-        detailLabel.textColor = detailColor
+            sSelf.primaryLabel.textColor = primaryColor
+            sSelf.secondaryLabel.textColor = secondaryColor
+            sSelf.detailLabel.textColor = detailColor
+        }
     }
 
-    func findColors(_ image: UIImage) -> [UIColor: Int] {
-        guard let pixelData = image.cgImage?.dataProvider?.data else { return [:] }
+    func findColors(_ image: UIImage, completion: @escaping ([String: Int]) -> Void) {
+        guard let pixelData = image.cgImage?.dataProvider?.data else { completion([:]); return }
         let data: UnsafePointer<UInt8> = CFDataGetBytePtr(pixelData)
 
-        var countedColors: [UIColor: Int] = [:]
+        var countedColors: [String: Int] = [:]
 
         let pixelsWide = Int(image.size.width * image.scale)
         let pixelsHigh = Int(image.size.height * image.scale)
@@ -100,10 +102,7 @@ class ViewController: UIViewController {
         for x in widthRange {
             for y in heightRange {
                 let pixelInfo: Int = ((pixelsWide * y) + x) * 4
-                let color = UIColor(red: CGFloat(data[pixelInfo]) / 255.0,
-                                    green: CGFloat(data[pixelInfo + 1]) / 255.0,
-                                    blue: CGFloat(data[pixelInfo + 2]) / 255.0,
-                                    alpha: CGFloat(data[pixelInfo + 3]) / 255.0)
+                let color = "\(data[pixelInfo]).\(data[pixelInfo + 1]).\(data[pixelInfo + 2])"
                 if countedColors[color] == nil {
                     countedColors[color] = 0
                 } else {
@@ -112,33 +111,33 @@ class ViewController: UIViewController {
             }
         }
 
-        return countedColors
+        completion(countedColors)
     }
 
-    func findMainColors(_ colors: [UIColor: Int]) -> (UIColor?, UIColor?, UIColor?) {
-
-        let sortedKeys = colors.sorted { $0.value > $1.value }
-                                .map { $0.key.color(withMinimumSaturation: 0.15) }
+    func findMainColors(_ colors: [String: Int]) -> (UIColor?, UIColor?, UIColor?) {
 
         var primaryColor: UIColor?, secondaryColor: UIColor?, detailColor: UIColor?
-        for color in sortedKeys {
+        for (colorString, _) in colors.sorted(by: { $0.value > $1.value }) {
+            let colorParts: [String] = colorString.components(separatedBy: ".")
+            let color: UIColor = UIColor(red: CGFloat(Int(colorParts[0])!) / 255,
+                                         green: CGFloat(Int(colorParts[1])!) / 255,
+                                         blue: CGFloat(Int(colorParts[2])!) / 255,
+                                         alpha: 1).color(withMinimumSaturation: 0.15)
+
             guard !color.isBlackOrWhite() else { continue }
             if primaryColor == nil {
                 primaryColor = color
             } else if secondaryColor == nil {
-                if !primaryColor!.isDistinct(color) {
-                    continue
+                if primaryColor!.isDistinct(color) {
+                    secondaryColor = color
                 }
-                secondaryColor = color
             } else if detailColor == nil {
-                if !secondaryColor!.isDistinct(color) || !primaryColor!.isDistinct(color) {
-                    continue
+                if secondaryColor!.isDistinct(color) && primaryColor!.isDistinct(color) {
+                    detailColor = color
+                    break
                 }
-                detailColor = color
-                break
             }
         }
-
         return (primaryColor, secondaryColor, detailColor)
     }
 }
