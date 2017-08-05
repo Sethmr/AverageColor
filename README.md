@@ -1,2 +1,2 @@
 # AverageColor
-Grabs the Average, Primary, Secondary, and Detail colors from a UIImage
+Grabs the Primary, Secondary, and Detail colors from a UIImage
