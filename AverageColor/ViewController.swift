@@ -15,6 +15,8 @@ class ViewController: UIViewController {
     @IBOutlet weak var detailLabel: UILabel!
     @IBOutlet weak var imageView: UIImageView!
 
+    let pixelThinner = 200
+
     let numberOfImages = 15
     var images: [String]!
 
@@ -79,16 +81,24 @@ class ViewController: UIViewController {
     }
 
     func findColors(_ image: UIImage) -> [UIColor: Int] {
-
-        let pixelsWide = Int(image.size.width)
-        let pixelsHigh = Int(image.size.height)
-
         guard let pixelData = image.cgImage?.dataProvider?.data else { return [:] }
         let data: UnsafePointer<UInt8> = CFDataGetBytePtr(pixelData)
 
         var countedColors: [UIColor: Int] = [:]
-        for x in 0..<pixelsWide {
-            for y in 0..<pixelsHigh {
+
+        let pixelsWide = Int(image.size.width * image.scale)
+        let pixelsHigh = Int(image.size.height * image.scale)
+
+        //  let widthRange = 0..<pixelsWide
+        //  let heightRange = 0..<pixelsHigh
+
+        let widthThinner = Int(pixelsWide / pixelThinner) + 1
+        let heightThinner = Int(pixelsHigh / pixelThinner) + 1
+        let widthRange = stride(from: 0, to: pixelsWide, by: widthThinner)
+        let heightRange = stride(from: 0, to: pixelsHigh, by: heightThinner)
+
+        for x in widthRange {
+            for y in heightRange {
                 let pixelInfo: Int = ((pixelsWide * y) + x) * 4
                 let color = UIColor(red: CGFloat(data[pixelInfo]) / 255.0,
                                     green: CGFloat(data[pixelInfo + 1]) / 255.0,
