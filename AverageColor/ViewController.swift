@@ -66,16 +66,16 @@ class ViewController: UIViewController {
     func analizeImage(_ image: UIImage) {
 
         imageView.image = image
-        view.backgroundColor = image.areaAverage()
-        let before = Date()
+
         findColors(image) { [weak self] imageColors in
             guard let sSelf = self else { return }
             var (primaryColor, secondaryColor, detailColor) = sSelf.findMainColors(imageColors)
-            print(Date().timeIntervalSince(before))
+
             if primaryColor == nil { primaryColor = .black }
             if secondaryColor == nil { secondaryColor = .white }
             if detailColor == nil { detailColor = .white }
 
+            sSelf.view.backgroundColor = primaryColor
             sSelf.primaryLabel.textColor = primaryColor
             sSelf.secondaryLabel.textColor = secondaryColor
             sSelf.detailLabel.textColor = detailColor
