@@ -78,45 +78,37 @@ class ViewController: UIViewController {
         detailLabel.textColor = detailColor
     }
 
-    func findColors(_ image: UIImage) -> [UIColor] {
+    func findColors(_ image: UIImage) -> [UIColor: Int] {
 
         let pixelsWide = Int(image.size.width)
         let pixelsHigh = Int(image.size.height)
 
-        guard let pixelData = image.cgImage?.dataProvider?.data else { return [] }
+        guard let pixelData = image.cgImage?.dataProvider?.data else { return [:] }
         let data: UnsafePointer<UInt8> = CFDataGetBytePtr(pixelData)
 
-        var imageColors: [UIColor] = []
+        var countedColors: [UIColor: Int] = [:]
         for x in 0..<pixelsWide {
             for y in 0..<pixelsHigh {
-                let point = CGPoint(x: x, y: y)
-                let pixelInfo: Int = ((pixelsWide * Int(point.y)) + Int(point.x)) * 4
+                let pixelInfo: Int = ((pixelsWide * y) + x) * 4
                 let color = UIColor(red: CGFloat(data[pixelInfo]) / 255.0,
                                     green: CGFloat(data[pixelInfo + 1]) / 255.0,
                                     blue: CGFloat(data[pixelInfo + 2]) / 255.0,
                                     alpha: CGFloat(data[pixelInfo + 3]) / 255.0)
-                imageColors.append(color)
+                if countedColors[color] == nil {
+                    countedColors[color] = 0
+                } else {
+                    countedColors[color]! += 1
+                }
             }
         }
 
-        return imageColors
+        return countedColors
     }
 
-    func findMainColors(_ colors: [UIColor]) -> (UIColor?, UIColor?, UIColor?) {
+    func findMainColors(_ colors: [UIColor: Int]) -> (UIColor?, UIColor?, UIColor?) {
 
-        var countedColors: [UIColor: Int] = [:]
-
-        let newColors = colors.map { $0.color(withMinimumSaturation: 0.15) }
-
-        newColors.forEach { color in
-            if countedColors[color] == nil {
-                countedColors[color] = 0
-            } else {
-                countedColors[color]! += 1
-            }
-        }
-
-        let sortedKeys = countedColors.sorted { $0.value > $1.value }.map { $0.key }
+        let sortedKeys = colors.sorted { $0.value > $1.value }
+                                .map { $0.key.color(withMinimumSaturation: 0.15) }
 
         var primaryColor: UIColor?, secondaryColor: UIColor?, detailColor: UIColor?
         for color in sortedKeys {
