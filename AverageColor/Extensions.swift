@@ -31,17 +31,17 @@ extension UIColor {
         let (r1, g1, b1, a1) = compareColor.components
 
         let threshold1: CGFloat = 0.25
-        guard fabs(r - r1) > threshold1 ||
-              fabs(g - g1) > threshold1 ||
-              fabs(b - b1) > threshold1 ||
-              fabs(a - a1) > threshold1 else { return false }
+        guard abs(r - r1) > threshold1 ||
+              abs(g - g1) > threshold1 ||
+              abs(b - b1) > threshold1 ||
+              abs(a - a1) > threshold1 else { return false }
 
         // check for grays, prevent multiple gray colors
         let threshold2: CGFloat = 0.03
-        guard fabs( r - g ) < threshold2 &&
-              fabs( r - b ) < threshold2 &&
-              fabs(r1 - g1) < threshold2 &&
-              fabs(r1 - b1) < threshold2 else { return true }
+        guard abs( r - g ) < threshold2 &&
+              abs( r - b ) < threshold2 &&
+              abs(r1 - g1) < threshold2 &&
+              abs(r1 - b1) < threshold2 else { return true }
 
         return false
     }
